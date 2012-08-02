@@ -16,6 +16,8 @@ Distance::~Distance() {
 	delete [] linearTree;
 }
 
+
+
 void Distance::createLabels(int sttype, double alpha, long tc_limit) {
 	struct timeval stime, etime;
 	float  rtime;
@@ -160,6 +162,420 @@ void Distance::createLabels(int sttype, double alpha, long tc_limit) {
 	showLabels();
 	Util::printSparseVec(treedist);
 	//#endif
+}
+
+map<int,int> Distance::answerToNodeAnswer(vector<vector<int> > answer)
+{
+	map<int , int > m;
+	for(int i=0; i<answer.size(); i++)
+	{
+		for(int j=0; j<answer[i].size(); j++)
+			m[answer[i][j]]=1;
+	}
+	return m;
+}
+
+void Distance::printAnswer(vector<vector<int> > answer)
+{
+	cout <<"The answer:"<< endl;
+	for(int i=0; i<answer.size(); i++)
+	{
+		cout << "["<<i<<"] ";
+		for(int j=0; j<answer[i].size(); j++)
+			cout << answer[i][j]<< " ";
+		cout <<endl;
+	}
+	cout << endl;
+}
+
+void Distance::printNodeAnswer(map<int,int> nodeAnswer)
+{
+	cout <<"Print the unique node in the answer"<<endl;
+	for(map<int,int> ::iterator it = nodeAnswer.begin(); it!= nodeAnswer.end(); it++)
+		cout << (*it).first<<" ";
+	cout << endl;
+}
+
+void Distance::printY(map<int,y_invert_list > Y)
+{
+	cout << "Look at Y:"<<endl;
+	cout << "Y.size : "<< Y.size()<<endl;
+	
+	for(map<int,y_invert_list > :: const_iterator it = Y.begin(); it!=Y.end(); it++)
+	{
+		cout <<"[" << (*it).first<<"] " << "<"<<(*it).second.m.size()<<","<<(*it).second.l.size() <<"> ";
+		for(map<int,int > :: const_iterator mit = (*it).second.m.begin(); mit!= (*it).second.m.end(); mit++)
+			cout << "("<<(*mit).first<<","<<(*mit).second<<") ";
+		cout << endl;
+	}
+	cout << endl;
+}
+
+void Distance::printX(map<int,x_invert_list > X)
+{
+	cout << "Look at X:"<<endl;
+	cout << "X.size : "<< X.size()<<endl;
+	
+	for(map<int,x_invert_list > :: const_iterator it = X.begin(); it!=X.end(); it++)
+	{
+		cout <<"[" << (*it).first<<"] " << "<"<<(*it).second.m.size()<<","<<(*it).second.l.size() <<"> ";
+		for(map<int,int > :: const_iterator mit = (*it).second.m.begin(); mit!= (*it).second.m.end(); mit++)
+			cout << "("<<(*mit).first<<","<<(*mit).second<<") ";
+		cout << endl;
+	}
+	cout << endl;
+}
+
+void Distance::printGlobalPair()
+{
+	cout<< "Print global Pairs : "<<endl;
+	for(map<int,map<int,int> > ::iterator mmit= global_pair.begin(); mmit!=global_pair.end(); mmit++)
+	{
+		for(map<int,int> :: iterator mit = (*mmit).second.begin(); mit!=(*mmit).second.end(); mit++ )
+			cout <<	"("<<(*mmit).first<<","<<(*mit).first<<","<<(*mit).second<<") ";
+	}
+	cout<<endl;
+}
+
+void Distance::constructGlobalInvert()
+{
+	for(int i=0; i< l_out.size(); i++)
+	{
+		for(map<int,int> :: iterator mit = l_out[i].begin(); mit!=l_out[i].end(); mit++)
+		{
+			int u=i;
+			int x=(*mit).first;
+			int d=(*mit).second;
+			map<int,vector<entry> > :: iterator git=global_invert.find(x);
+			if(git == global_invert.end())
+			{
+				entry e; e.u=u; e.d=d;
+				vector<entry> v; v.push_back(e);
+				global_invert[x] = v;
+			}
+			else
+			{
+				entry e; e.u=u; e.d=d;
+				(*git).second.push_back(e);
+			}
+		}
+	}
+}
+
+void Distance::printGlobalInvert()
+{
+	cout << "Print the global Invert : "<<endl;
+	cout << "size : "<<global_invert.size()<<endl;
+	for(map<int,vector<entry> > :: iterator it= global_invert.begin(); it!=global_invert.end(); it++)
+	{
+		cout << "["<<(*it).first<<"] ";
+		for(int i=0; i< (*it).second.size(); i++)
+			cout << "("<<(*it).second[i].u << "," << (*it).second[i].d << ") ";
+		cout << endl;
+	}
+}
+
+void Distance::run()
+{
+	vector<string> keys;
+	keys.push_back("a");
+	keys.push_back("e");
+	keys.push_back("g");
+	int D=3;
+	map<int,int> nodeAnswer;
+	vector<vector<int> > answer;
+	vector<int> l = g.getKeyword(keys[0]);
+	for(int i=0; i<l.size(); i++)
+	{
+		vector<int> v;
+		v.push_back(l[i]);
+		answer.push_back(v);
+	}
+	constructGlobalInvert();
+	printGlobalInvert();
+	for(int i=1; i<keys.size(); i++)
+	{
+		printAnswer(answer);
+		nodeAnswer =  answerToNodeAnswer(answer);
+		printNodeAnswer(nodeAnswer);
+		answer = step2(keys[i],D,nodeAnswer,answer);
+		///printAnswer(answer);
+		
+	}
+	printAnswer(answer);
+}
+
+vector<in_element> Distance::getIn(int u, int D)
+{
+	vector<in_element> in_list;
+	map<int,int> ::const_iterator it;
+	
+	for(it= l_in[u].begin(); it!= l_in[u].end(); it++)
+	{
+		in_element ie;
+		ie.x = (*it).first;
+		ie.d = (*it).second;
+		if(ie.d <= D)
+		in_list.push_back(ie);
+	}
+	return in_list;
+}
+vector<out_element> Distance::getOut(int u, int D)
+{
+	vector<out_element> out_list;
+	map<int,int> ::const_iterator it;
+	
+	for(it= l_out[u].begin(); it!= l_out[u].end(); it++)
+	{
+		out_element oe;
+		oe.y = (*it).first;
+		oe.d = (*it).second;
+		if(oe.d <= D)
+		out_list.push_back(oe);
+	}
+	return out_list;
+}
+
+map<int,y_invert_list> Distance::constructY(string key,int D)
+{
+	map<int,y_invert_list > Y;
+	vector<int> key_invert_list = g.getKeyword(key);
+	for(int i=0; i<key_invert_list.size(); i++)
+	{
+		int u = key_invert_list[i];
+		vector<in_element > in_u = getIn(u,D);
+		for(int j=0; j<in_u.size(); j++)
+		{
+			int x = in_u[j].x;
+			int d = in_u[j].d;
+			if(Y.find(x) == Y.end())
+			{
+				y_invert_list y;
+				y.m[u]=d;
+				Y[x] = y;
+			}
+			else
+			{
+				map<int,int> m = Y[x].m;
+				if(m.find(u)==m.end())
+				{
+					m[u] = d;
+					Y[x].m = m;
+					
+				}
+				else if(m[u] > d)
+				{
+					m[u] = d;
+					Y[x].m = m;// we also need to convert all the things from map to list and sort them
+				}
+				
+			}
+		}
+		
+	}
+
+
+	//push the data from map to vector
+
+	for(map<int,y_invert_list > :: iterator it = Y.begin(); it!=Y.end(); it++)
+	{
+		
+		for(map<int,int > :: iterator mit = (*it).second.m.begin(); mit!= (*it).second.m.end(); mit++)
+		{
+			y_element ye;
+			ye.u = (*mit).first; ye.d =(*mit).second;
+			(*it).second.l.push_back(ye);
+		}
+		
+	}
+	// print the data Y
+	printY(Y);
+	return Y;
+}
+
+int Distance::nearestAncestor(int y, map<int,int> refs)
+{
+	int x=y;
+	while(x!=-1 && linearTree[x]!=-1)
+	{
+		x = linearTree[x];
+		if(refs.find(x)!=refs.end())
+		{
+			return x;// x is ancester of y;
+		}
+	}
+	return -1;// there is no ancestor of y belongs to refs, what should I return? Ask kewang tomorrow.
+}
+
+
+bool Distance::check(vector<int> a, int v, int D)
+{
+	for(int i=0; i<a.size(); i++)
+	{
+		int u = a[i];
+		if(u == v)
+			continue;
+		map<int,map<int,int> > ::iterator mmit;
+		mmit = global_pair.find(u);
+		map<int,int> :: iterator mit;
+		if(mmit != global_pair.end())
+		{
+			mit = (*mmit).second.find(v);
+			if(mit != (*mmit).second.end())
+			{
+				if( (*mit).second > D )
+					return false;
+			}
+			else
+				return false;
+
+		}
+		else// uj doesn't exist in the map
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+
+
+vector<vector<int> > Distance::step2(string key, int D, map<int,int> nodeAnswer, vector<vector<int> > answer )
+{
+	map<int,y_invert_list> Y = constructY( key, D);
+	map<int,x_invert_list> X;
+	for(map<int,y_invert_list>::iterator it=Y.begin(); it!=Y.end(); it++)
+	{
+		for(int i=0; i<(*it).second.l.size(); i++)
+		{
+			int y = (*it).first;
+			int u = (*it).second.l[i].u;
+			int d = (*it).second.l[i].d;
+			int x = nearestAncestor(y,nodeAnswer);
+			if(x == -1)
+			{
+				cout <<"Error: x is -1"<<endl;
+				continue;
+			}
+				
+			int dT =  distance(x,y);
+			if( ( d + dT ) <= D )
+			{
+				if(X.find(x) == X.end())
+				{
+					x_invert_list x_i;
+					x_i.m[u] = d;
+					X[x]= x_i;
+				}
+				else 
+				{
+					map<int,int> m = X[x].m;
+					if(m.find(u) == m.end())
+					{
+						m[u] = d;
+						X[x].m = m;
+					}
+					else if(m[u] > ( d + dT ) )
+					{
+						m[u] = d;
+						X[x].m = m;
+					}
+				}
+			}
+		}
+		
+	}
+
+	//push the data from map to vector
+
+	for(map<int,x_invert_list > :: iterator it = X.begin(); it!=X.end(); it++)
+	{
+		
+		for(map<int,int > :: iterator mit = (*it).second.m.begin(); mit!= (*it).second.m.end(); mit++)
+		{
+			x_element xe;
+			xe.u = (*mit).first; xe.d =(*mit).second;
+			(*it).second.l.push_back(xe);
+		}
+		
+	}
+	//print the data X
+	printX(X);
+
+	//printGloablInvert
+	printGlobalInvert();
+	
+	// use a map to store all the d()
+	for(map<int,x_invert_list>:: iterator it = X.begin(); it!=X.end(); it++)
+	{
+		int x = (*it).first;
+		vector<entry> x_x_l = global_invert[x];
+		vector<y_element> x_y_l = (*it).second.l;
+		if(x_x_l.size()==0)
+			cout << "x_x_l size is zero"<<endl;
+		for(int i=0; i<x_x_l.size(); i++)
+		{
+			int uj = x_x_l[i].u;
+			int dj = x_x_l[i].d;
+			for(int j=0; j<x_y_l.size(); j++)
+			{
+				int uk = x_y_l[j].u;
+				int dk = x_y_l[j].d;
+				cout <<"ui,uk "<<uj<<" "<<dj<< " "<<uk<<" "<<dk<<endl;
+				if( (dj + dk) <D)
+				{
+					map<int,map<int,int> > ::iterator mmit;
+					mmit = global_pair.find(uj);
+					map<int,int> :: iterator mit;
+					if(mmit != global_pair.end())
+					{
+						mit = (*mmit).second.find(uk);
+						if(mit != (*mmit).second.end())
+						{
+							if( (*mit).second > (dj+dk) )
+								(*mmit).second[uk] = dj+dk;
+						}
+					}
+					else// uj doesn't exist in the map
+					{
+						map<int,int> mmap;
+						mmap[uk] = dj + dk;
+						global_pair[uj] = mmap;
+					}
+					
+				}
+				else
+				{
+					break;
+				}
+			}
+		}
+	}
+
+	//print golbal pairs
+	printGlobalPair();
+
+	
+	vector<vector<int> > new_answer;
+	vector<int> key_list = g.getKeyword( key);
+	for(int i=0; i<answer.size(); i++)
+	{
+		for(int j=0; j<key_list.size(); j++)
+		{
+			if(check(answer[i],key_list[j],D))
+			{
+				vector<int> a_e;
+				a_e = answer[i];
+				a_e.push_back(key_list[j]);
+				new_answer.push_back(a_e);
+				
+			}
+		}
+		
+			
+		
+	}
+	return new_answer;
 }
 
 void Distance::reducedGraphToLinear(const ReducedGraph& rg,int size) {// add by zhao

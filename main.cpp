@@ -179,6 +179,7 @@ int main(int argc, char* argv[]) {
 		return -1;
 	}
 	g.readKeyword(keyinfile);
+	//
 	
 	bool r;
 	struct timeval after_time, before_time;
@@ -228,6 +229,9 @@ int main(int argc, char* argv[]) {
 		(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
 	cout << "#labeling time:" << labeling_time << " (ms)\t Time " << Util::formatTime(labeling_time) << endl;
 
+
+	cout << "process the kewang's algorithm"<<endl;
+	dq.run();
 	// process queries
 	cout << "process distance queries..." << endl;
 

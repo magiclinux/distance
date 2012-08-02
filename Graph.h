@@ -37,6 +37,7 @@ class Graph {
 		~Graph();
 		void readGraph(istream&);
 		void readKeyword(istream&);
+		vector<int> getKeyword(string key);
 		void writeGraph(ostream&);
 		void printGraph();
 		void addVertex(int);

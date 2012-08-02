@@ -42,6 +42,11 @@ void Graph::strTrimRight(string& str) {
 		str.clear();
 }
 
+vector<int> Graph::getKeyword(string key)
+{
+	return keyword[key];
+}
+
 void Graph::readKeyword(istream& in) {
 	string buf;
 	getline(in, buf);
