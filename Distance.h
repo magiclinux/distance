@@ -18,6 +18,7 @@ class Distance {
 		double real_alpha, real_alpha2;
 		struct timeval after_time, before_time;
 		float run_time;	
+		int *linearTree;
 
 	public:
 		Distance(Graph& graph);
@@ -25,7 +26,8 @@ class Distance {
 		void createLabels(int,double,long);
 		void updateLabels(const vector<IDPair>& left, const vector<IDPair>& right);
 		void addCandLabels(const vector<int>& rank, int start_id, int& end_id, 
-				ReducedGraph& sptree, BiCover& bc, long tc_limit);		
+				ReducedGraph& sptree, BiCover& bc, long tc_limit);
+		void reducedGraphToLinear(const ReducedGraph& rg,int size);		
 		int distance(int, int);
 		bool test_distance(int, int);
 		int label_size();

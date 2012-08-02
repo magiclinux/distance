@@ -13,6 +13,7 @@ Distance::Distance(Graph& graph):g(graph) {
 }
 
 Distance::~Distance() {
+	delete [] linearTree;
 }
 
 void Distance::createLabels(int sttype, double alpha, long tc_limit) {
@@ -145,19 +146,41 @@ void Distance::createLabels(int sttype, double alpha, long tc_limit) {
 	vector<IDPair>().swap(left);
 	vector<IDPair>().swap(right);	
 	
-	#ifdef DEBUG
+	//#ifdef DEBUG
 	Util::printReducedGraph(sptree);
-	#endif
+	//#endif
+	reducedGraphToLinear(sptree,g.num_vertices());// add by zhao
 	
 	// compute all pairs shortest paths for sptree
 	GraphUtil::computeShortestDistanceOnTree(sptree,treedist,gsize);
 	ReducedGraph().swap(sptree);
 	
 	// for test
-	#ifdef DEBUG
+	//#ifdef DEBUG
 	showLabels();
 	Util::printSparseVec(treedist);
-	#endif
+	//#endif
+}
+
+void Distance::reducedGraphToLinear(const ReducedGraph& rg,int size) {// add by zhao
+	ReducedGraph::const_iterator rit;
+	vector<int>::const_iterator vit;
+	cout << "ReducedGraph " << endl;
+	linearTree = new int[size];
+	for(int i=0; i<size; i++)
+		linearTree[i]=-1;
+	for (rit = rg.begin(); rit != rg.end(); rit++) {
+		//cout << "vertex " << rit->first << ": ";
+		for (vit = rit->second.begin(); vit != rit->second.end(); vit++)
+			linearTree[*vit] = rit->first;
+			//cout << *vit << " ";
+		//cout << " #" << endl;
+	}
+	cout << "Look at the LinearTree:"<<endl;
+	for(int i=0; i<size; i++)
+		cout<< "["<<i<<"]="<<linearTree[i]<<endl;
+	cout<<endl;
+	//cout << endl;
 }
 
 void Distance::addCandLabels(const vector<int>& rank, int start_id, int& end_id, 
