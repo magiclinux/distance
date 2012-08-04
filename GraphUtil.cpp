@@ -13,6 +13,8 @@ void GraphUtil::buildMaxWST(Graph& g, ReducedGraph& sptree, vector<int>& rank) {
 	int tree_tc = 0;
 
 	for (int i = 0; i < gsize; i++) {
+		if(i%100==0)
+			printf("buildMaxWST %d\n",i);
 		ReducedGraph tree;
 		tree_tc = BFSTree(g, i, tree);
 		#ifdef ALLPATHS

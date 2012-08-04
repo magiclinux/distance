@@ -49,6 +49,8 @@ class Distance {
 		struct timeval after_time, before_time;
 		float run_time;	
 		int *linearTree;
+		string labelfile;
+		string sptreefile;
 
 	public:
 		Distance(Graph& graph);
@@ -59,7 +61,7 @@ class Distance {
 				ReducedGraph& sptree, BiCover& bc, long tc_limit);
 		void reducedGraphToLinear(const ReducedGraph& rg,int size);//add by zhao
 		map<int,y_invert_list> constructY(string key,int D);// add by zhao
-		void run();		
+		void run(vector<string> keys,int D);		
 		vector<in_element> getIn(int u, int D);
 		vector<out_element> getOut(int u, int D);
 		int nearestAncestor(int y, map<int,int> refs);
@@ -76,6 +78,15 @@ class Distance {
 		void printGlobalPair();
 		void constructGlobalInvert();
 		void printGlobalInvert();
+		
+		void readAll();
+		void writeAll();
+		
+		void writeLabels();
+		void readLabels();
+		
+		void writeSptree(const ReducedGraph& rg);
+		void readSptree();
 		
 		int distance(int, int);
 		bool test_distance(int, int);

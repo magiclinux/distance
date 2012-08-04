@@ -34,11 +34,14 @@ class Graph {
 		Graph(int);
 		Graph(GRA&, VertexList&);
 		Graph(istream&);
+		Graph(string filename);
 		~Graph();
 		void readGraph(istream&);
 		void readKeyword(istream&);
 		vector<int> getKeyword(string key);
+		void readKeyword(string filename);
 		void writeGraph(ostream&);
+		void readGraphList(string filename);
 		void printGraph();
 		void addVertex(int);
 		void addEdge(int, int);

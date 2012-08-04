@@ -21,6 +21,10 @@ Graph::Graph(istream& in) {
 	readGraph(in);
 }
 
+Graph::Graph(string filename) {
+	readGraphList(filename);
+}
+
 Graph::~Graph() {}
 
 void Graph::printGraph() {
@@ -46,6 +50,49 @@ vector<int> Graph::getKeyword(string key)
 {
 	return keyword[key];
 }
+
+void Graph::readKeyword(string filename)
+{
+	FILE * fp = fopen(filename.c_str(),"r");
+	int N;//total nodes;
+	int CN;// number of content nodes;
+	fscanf(fp,"%d%d",&N,&CN);
+	map<string,vector<int> > :: iterator it;
+	for(int i=0; i<N; i++)
+	{
+		int u,n; char buff[1000];
+		fscanf(fp,"%d%d",&u,&n);
+		for(int j=0; j<n; j++)
+		{
+			fscanf(fp,"%s",buff);
+			string sub = (string)(buff);
+			it = keyword.find(sub);
+			if(it!=keyword.end())
+			{
+				(*it).second.push_back(u);
+			}
+			else
+			{
+				vector<int> l; l.push_back(u);
+				keyword[sub]= l;
+			}
+		}
+			
+	}
+	fclose(fp);
+	cout <<"Look at the inverted index:"<<keyword.size()<<endl;
+	cout << "N : "<<N<<" CN : "<<CN<<endl;
+	for(it = keyword.begin(); it!=keyword.end(); it++)
+	{
+		cout<< (*it).first.c_str() <<" : ";
+		for(vector<int> :: iterator mit=(*it).second.begin(); mit!=(*it).second.end(); mit++)
+		{
+			cout<<" "<<(*mit);
+		}
+		cout<<" #"<<endl;
+	}
+}
+
 
 void Graph::readKeyword(istream& in) {
 	string buf;
@@ -91,19 +138,36 @@ void Graph::readKeyword(istream& in) {
 		}
 		++sid;
 	}
-	vector<int> :: iterator mit;
+	
 	cout <<"Look at the inverted index:"<<keyword.size()<<endl;
 	for(it = keyword.begin(); it!=keyword.end(); it++)
 	{
 		cout<< (*it).first.c_str() <<" :";
-		for(mit=(*it).second.begin(); mit!=(*it).second.end(); mit++)
+		for(vector<int> :: iterator mit=(*it).second.begin(); mit!=(*it).second.end(); mit++)
 		{
 			cout<<" "<<(*mit);
 		}
 		cout<<" #"<<endl;
 	}
 }	
-
+void Graph::readGraphList(string filename)
+{
+	FILE *fp =fopen(filename.c_str(),"r");
+	int n,m,sid,tid,d,cn;
+	fscanf(fp,"%d%d%d",&n,&m,&cn);
+	vsize = n;
+	vl = VertexList(n);
+	graph = GRA(n, In_OutList());
+	for (int i = 0; i < n; i++)
+		addVertex(i);
+	for(int i=0; i<m; i++)
+	{
+		fscanf(fp,"%d %d %d",&sid,&tid,&d);
+		addEdge(sid, tid);
+		addEdge(tid, sid);
+	}
+	fclose(fp);
+}
 
 void Graph::readGraph(istream& in) {
 	string buf;
@@ -143,6 +207,7 @@ void Graph::readGraph(istream& in) {
 		++sid;
 	}
 }	
+
 
 void Graph::writeGraph(ostream& out) {
 	cout << "Graph size = " << graph.size() << "\tNum of edge="<< num_edges() << endl;

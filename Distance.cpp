@@ -10,6 +10,8 @@ Distance::Distance(Graph& graph):g(graph) {
 	l_in = vector<map<int,int> >(g.num_vertices(),map<int,int>());
 	l_out = vector<map<int,int> >(g.num_vertices(),map<int,int>());
 	real_alpha2 = 0;
+	labelfile = "label.txt";
+	sptreefile="sptree.txt";
 }
 
 Distance::~Distance() {
@@ -152,7 +154,7 @@ void Distance::createLabels(int sttype, double alpha, long tc_limit) {
 	Util::printReducedGraph(sptree);
 	//#endif
 	reducedGraphToLinear(sptree,g.num_vertices());// add by zhao
-	
+	writeSptree(sptree);
 	// compute all pairs shortest paths for sptree
 	GraphUtil::computeShortestDistanceOnTree(sptree,treedist,gsize);
 	ReducedGraph().swap(sptree);
@@ -162,6 +164,70 @@ void Distance::createLabels(int sttype, double alpha, long tc_limit) {
 	showLabels();
 	Util::printSparseVec(treedist);
 	//#endif
+	
+	
+	writeLabels();
+}
+
+void Distance::writeAll()
+{
+	
+	//Util::writeSparseVec(treedist);
+}
+
+void Distance::readAll()
+{
+	readSptree();
+	readLabels();
+	//Util::readSparseVec(treedist);
+	
+	
+}
+
+void Distance::writeSptree(const ReducedGraph& rg)
+{
+	printf("write sptree begin ...\n");
+	ReducedGraph::const_iterator rit;
+	vector<int>::const_iterator vit;
+	
+	FILE * fp = fopen(sptreefile.c_str(),"w");
+	fprintf(fp,"%d\n",rg.size());
+	for (rit = rg.begin(); rit != rg.end(); rit++) {
+		fprintf(fp,"%d %d\n", rit->first,rit->second.size());
+		for(vit = rit->second.begin(); vit != rit->second.end(); vit++)
+			fprintf(fp,"%d ",*vit);
+		fprintf(fp,"\n");
+	}
+	fclose(fp);
+	
+	printf("write sptree end ...\n");
+}
+
+void Distance::readSptree()
+{
+	printf("read sptree begin ...\n");
+	ReducedGraph rg;
+	FILE * fp = fopen(sptreefile.c_str(),"r");
+	int n,m,id,a;
+	fscanf(fp,"%d",&n);
+	for(int i=0; i<n; i++)
+	{
+		fscanf(fp,"%d %d",&id,&m);
+		vector<int> v;
+		for(int j=0; j<m; j++)
+		{
+			fscanf(fp,"%d",&a);
+			v.push_back(a);
+		}
+		rg[id] = v;
+		
+	}
+	fclose(fp);
+	printf("read sptree end ...\n");
+	printf("recover treedist\n");
+	GraphUtil::computeShortestDistanceOnTree(rg,treedist,g.num_vertices());// I hope it works.
+	printf("recover linearTree\n");
+	reducedGraphToLinear(rg,g.num_vertices());
 }
 
 map<int,int> Distance::answerToNodeAnswer(vector<vector<int> > answer)
@@ -275,13 +341,9 @@ void Distance::printGlobalInvert()
 	}
 }
 
-void Distance::run()
+void Distance::run(vector<string> keys,int D)
 {
-	vector<string> keys;
-	keys.push_back("a");
-	keys.push_back("e");
-	keys.push_back("g");
-	int D=3;
+
 	map<int,int> nodeAnswer;
 	vector<vector<int> > answer;
 	vector<int> l = g.getKeyword(keys[0]);
@@ -292,12 +354,12 @@ void Distance::run()
 		answer.push_back(v);
 	}
 	constructGlobalInvert();
-	printGlobalInvert();
+	//printGlobalInvert();
 	for(int i=1; i<keys.size(); i++)
 	{
-		printAnswer(answer);
+		//printAnswer(answer);
 		nodeAnswer =  answerToNodeAnswer(answer);
-		printNodeAnswer(nodeAnswer);
+		//printNodeAnswer(nodeAnswer);
 		answer = step2(keys[i],D,nodeAnswer,answer);
 		///printAnswer(answer);
 		
@@ -389,7 +451,7 @@ map<int,y_invert_list> Distance::constructY(string key,int D)
 		
 	}
 	// print the data Y
-	printY(Y);
+	//printY(Y);
 	return Y;
 }
 
@@ -500,10 +562,10 @@ vector<vector<int> > Distance::step2(string key, int D, map<int,int> nodeAnswer,
 		
 	}
 	//print the data X
-	printX(X);
+	//printX(X);
 
 	//printGloablInvert
-	printGlobalInvert();
+	//printGlobalInvert();
 	
 	// use a map to store all the d()
 	for(map<int,x_invert_list>:: iterator it = X.begin(); it!=X.end(); it++)
@@ -553,7 +615,7 @@ vector<vector<int> > Distance::step2(string key, int D, map<int,int> nodeAnswer,
 	}
 
 	//print golbal pairs
-	printGlobalPair();
+	//printGlobalPair();
 
 	
 	vector<vector<int> > new_answer;
@@ -707,6 +769,68 @@ double Distance::stat_alpha() {
 
 double Distance::stat_alpha2() {
 	return real_alpha2;
+}
+
+void Distance::writeLabels()
+{
+	printf("write the labels begin ...\n");
+	FILE * fp = fopen(labelfile.c_str(),"w");
+	fprintf(fp,"%d\n",l_out.size());
+	for(int i=0; i<l_out.size(); i++)
+	{
+		fprintf(fp,"%d %d\n",i,l_out[i].size());
+		for(map<int,int>::iterator mit = l_out[i].begin(); mit != l_out[i].end(); mit++)
+			fprintf(fp,"%d %d ",mit->first,mit->second);
+		fprintf(fp,"\n");
+	}
+	
+	fprintf(fp,"%d\n",l_in.size());
+	for(int i=0; i<l_in.size(); i++)
+	{
+		fprintf(fp,"%d %d\n",i,l_in[i].size());
+		for(map<int,int>::iterator mit = l_in[i].begin(); mit != l_in[i].end(); mit++)
+			fprintf(fp,"%d %d ",mit->first,mit->second);
+		fprintf(fp,"\n");
+	}
+	fclose(fp);
+	printf("write the labels end ...\n");
+}
+
+void Distance::readLabels()
+{
+	printf("read the labels begin ...\n");
+	FILE * fp = fopen(labelfile.c_str(),"r");
+	int n;
+	fscanf(fp,"%d",&n);
+	for(int i=0; i<n; i++)
+	{
+		int id,m;
+		fscanf(fp,"%d%d",&id,&m);
+		map<int,int> amap;
+		int a,b;
+		for(int j=0; j<m; j++)
+		{
+			fscanf(fp,"%d%d",&a,&b);
+			amap[a]=b;
+		}
+		l_out.push_back(amap);
+	}
+	
+	fscanf(fp,"%d",&n);
+	for(int i=0; i<n; i++)
+	{
+		int id,m;
+		fscanf(fp,"%d%d",&id,&m);
+		map<int,int> amap;
+		int a,b;
+		for(int j=0; j<m; j++)
+		{
+			fscanf(fp,"%d%d",&a,&b);
+			amap[a]=b;
+		}
+		l_in.push_back(amap);
+	}
+	printf("write the labels end ...\n");
 }
 
 void Distance::showLabels() {

@@ -8,6 +8,10 @@
 
 //#define TEST
 
+// how to use the command line
+//./distance -s 2 -n 10 -d -f edge_9.txt -k node_9.txt -w 0 -q newpool100.txt -R 3
+
+
 static void usage() {
 	cout << "\nUsage:\n"
 		"	distance [-h] [-d] [-b] [-a alpha] [-t tc_limit] [-g n c r] [-n num_query] filename\n"
@@ -22,7 +26,8 @@ static void usage() {
 		"	-t	Initial TC_LIMIT for each iteration (default is 20,000,000).\n"
 		"	-n	Set the total number of random queries. The default value is 100,000.\n"
 		"	-d	debug mode (test distance query).\n"
-		"	filename	The graph file.\n"
+		"	-f      filename	The graph file.\n"
+		"	-k	keyword file.\n"
 		<< endl;
 }
 
@@ -100,11 +105,14 @@ int main(int argc, char* argv[]) {
 	long tc_limit = 20000000; 
 	bool debug = false;
 	bool grandom = false;
+	int wlabel= 0;
 	bool bfs = false;
 	int vsize = 0, iter = 1;
 	double density = 0, ratio = 1.0, alpha = 1.0;
 	char *filename;
 	char *keyfilename;
+	char *queryfilename;
+	int R;
 	while (i < argc) {
 		if (strcmp("-h", argv[i]) == 0) {
 			usage();
@@ -149,6 +157,18 @@ int main(int argc, char* argv[]) {
 			i++;
 			keyfilename = argv[i++];
 		}
+		else if (strcmp("-w", argv[i]) == 0){
+			i++;
+			wlabel = atoi(argv[i++]);	
+			}
+		else if (strcmp("-q", argv[i]) == 0){
+			i++;
+			queryfilename = argv[i++];
+		}
+		else if (strcmp("-R", argv[i]) == 0){
+			i++;
+			R = atoi(argv[i++]);
+		}
 	}
 	
 	if (grandom) {
@@ -157,15 +177,17 @@ int main(int argc, char* argv[]) {
 	}
 	
 	ifstream infile(filename);
+	/*
 	if (!infile) {
 		cout << "Error: Cannot open " << filename << endl;
 		return -1;
 	}
-	
+	*/
 	cout << "INPUT: query_num=" << query_num << " st_type=" << st_type << " alpha=" << alpha << " tc_limit=" << tc_limit 
 			<< " filename=" << filename << endl;
 	
-	Graph g(infile);
+	Graph g((string)filename);
+	//Graph g(infile);
 	cout << "#vertex size:" << g.num_vertices() << "\t#edges size:" << g.num_edges() << endl;
 
 	int s, t, dist;
@@ -173,12 +195,7 @@ int main(int argc, char* argv[]) {
 	int gsize = g.num_vertices();
 
 	// add by zhao
-	ifstream keyinfile(keyfilename);
-	if (!keyinfile) {
-		cout << "Error: Cannot open " << keyfilename << endl;
-		return -1;
-	}
-	g.readKeyword(keyinfile);
+	g.readKeyword(keyfilename);
 	//
 	
 	bool r;
@@ -223,7 +240,15 @@ int main(int argc, char* argv[]) {
 	Distance dq(g);
 	cout << "starting creating labels..." << endl;
 	gettimeofday(&before_time, NULL);
-	dq.createLabels(st_type,alpha,tc_limit);
+	if(wlabel)
+	{
+		dq.createLabels(st_type,alpha,tc_limit);
+		
+	}
+	else
+	{
+		dq.readAll();
+	}
 	gettimeofday(&after_time, NULL);
 	labeling_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 + 
 		(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
@@ -231,11 +256,32 @@ int main(int argc, char* argv[]) {
 
 
 	cout << "process the kewang's algorithm"<<endl;
-	dq.run();
+	
+	FILE *fp = fopen(queryfilename,"r");
+	int n;
+	fscanf(fp,"%d",&n);
+	for(int i=0; i<n; i++)
+	{
+		vector<string> v;
+		int m; char buff[1000];
+		fscanf(fp,"%d",&m);
+		for(int j=0; j<m; j++)
+		{
+			fscanf(fp,"%s",buff);
+			v.push_back((string)(buff));
+		}
+		gettimeofday(&before_time, NULL);
+		dq.run(v,R);
+		gettimeofday(&after_time, NULL);
+		query_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 + 
+			(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
+		cout << "#total query running time:" << query_time << " (ms)" << endl;
+	}
 	// process queries
-	cout << "process distance queries..." << endl;
-
+	//cout << "process distance queries..." << endl;
+/*
 	gettimeofday(&before_time, NULL);
+	
 	if (debug) {
 		cout << "queries test..." << endl;
 		gettimeofday(&before_time, NULL);
@@ -254,7 +300,7 @@ int main(int argc, char* argv[]) {
 	query_time = (after_time.tv_sec - before_time.tv_sec)*1000.0 + 
 		(after_time.tv_usec - before_time.tv_usec)*1.0/1000.0;
 	cout << "#total query running time:" << query_time << " (ms)" << endl;
-
+*/ //we don't need this part
 	int labelsize, iteration;
 	double ra = dq.stat_alpha();
 	double ra2 = dq.stat_alpha2();
